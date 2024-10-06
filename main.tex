@@ -1,0 +1,99 @@
+\documentclass[a4paper,10pt]{article}
+
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage[colorlinks, linkcolor=black, citecolor=black, urlcolor=black]{hyperref}
+\usepackage{geometry}
+\geometry{tmargin=2cm, bmargin=2cm, lmargin=2cm, rmargin=2cm}
+\usepackage{todonotes} %Used for the figure placeholders
+\usepackage{ifthen}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
+\usepackage{verbatim, fancyvrb}
+\usepackage{cprotect}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{chngcntr}
+\usepackage{changepage}
+\usetikzlibrary{arrows.meta}
+\usepackage{pgfplots}
+\usepackage{url} 
+\usepackage{enumitem}
+
+\usepackage[ backend=biber, style=alphabetic, sorting=ynt ]{biblatex}
+
+\addbibresource{mybibliography.bib}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+%\counterwithin{equation}{subsection}
+%\renewcommand{\theequation}{\thesubsection\alph{equation}} \makeatletter
+%\renewcommand{\p@equation}{\thesection.\thesubsection} \makeatother
+
+% Your name and student number must be filled in on the title page found in
+% titlepage.tex.
+
+
+\newcommand{\supsuboverbrace}[2][]{%
+  {\everymath{\scriptstyle}%
+   \overbrace{\scriptstyle#2}^{#1}}%
+}
+%\numberwithin{equation}{section}
+
+\begin{document}
+\setlist[enumerate]{leftmargin=0cm}
+
+\VerbatimFootnotes
+\newboolean{anonymize}
+% Uncomment to create an anonymized version of your report
+%\setboolean{anonymize}{true}
+
+\begin{titlepage}
+    \newpage
+    \thispagestyle{empty}
+    \frenchspacing
+    \hspace{-0.2cm}
+    \includegraphics[height=4cm]{sedes}
+    \hspace{0.2cm}
+    \rule{0.5pt}{4cm}
+    \hspace{0.2cm}
+    \begin{minipage}[b]{8cm}
+        \Large{Université\newline Catholique\newline de
+        Louvain}\smallskip\newline
+        \large{}\smallskip \smallskip \newline
+        \textbf{Ecole \newline Polytechnique \newline de  Louvain}\smallskip
+        \smallskip
+    \end{minipage}
+    \hspace{\stretch{1}} \vspace*{3.2cm}\vfill
+    \begin{center}
+        \begin{minipage}[t]{\textwidth}
+            \begin{center}
+                \LARGE{\rm{\textbf{\uppercase{Matrix Computations}}}}\\
+                \Large{\rm{Homework 1}}
+            \end{center}
+        \end{minipage}
+    \end{center}
+    \vfill
+    \hfill\makebox[8.5cm][l]{%
+        \vbox to 7cm{\vfill\noindent \ifthenelse{\boolean{anonymize}}{%
+                {\rm \textbf{Anonymized}}\\
+                {\rm Academic year 2016--2017} }{%
+                {\rm \textbf{Jonathan Kojovi Victor}}\\
+                {\rm 58522100}\\
+                {\rm \textbf{Antoine Lemaire}} \\
+                {\rm 16732000} \\
+                {\rm \textbf{Margot Devillers}} \\
+                {\rm 28542000} \\
+                {\rm \textbf{Victor Lepère}}\\
+                {\rm 61502000}\\[2mm]
+                {\rm Academic year 2024--2025} } } }
+\end{titlepage}
+
+\newpage
+
+\section*{}
+
+
+
+\end{document}
