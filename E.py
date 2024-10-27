@@ -1,13 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import warnings
+from scipy.sparse.linalg import gmres
 
 plt.rcParams.update(
     {
         'text.usetex': True,
         'font.family': 'serif',
         'font.size': 14,
-        'legend.fontsize': 14,
+        'legend.fontsize': 9,
         'legend.fancybox': False,
         'legend.shadow': True,
         'legend.framealpha': 1,
@@ -78,6 +79,78 @@ def GMRES(A, b, r):
 
     return Q @ y
 
+def givens_qr(H, b, r):
+    """
+    Compute R (tilde) and bhat as described in C2
+    """
+    R = np.copy(H)
+    Omega = np.identity(r+1)
+    bhat = np.zeros(r+1)
+    bhat[0] = 1
+    for i in range(r):
+        r = np.sqrt(R[i, i]**2 + R[i+1, i]**2)
+        c = R[i, i]/r
+        s = R[i+1, i]/r
+
+        R[i, i:], R[i+1, i:] = c * R[i, i:] + s * R[i+1, i:], -s * R[i, i:] + c * R[i+1, i:]
+        bhat[i], bhat[i+1] = c * b[i] + s * b[i+1], -s * b[i] + c * b[i+1]
+        Omega[i, :], Omega[i+1, :] = c * Omega[i, :] + s * Omega[i+1, :], -s * Omega[i, :] + c * Omega[i+1, :]
+    
+    bhat = np.linalg.norm(b) * bhat
+
+    assert np.allclose(H, Omega.T @ R) # passed
+    return R, bhat
+
+def backward_sub(R, bhat1, r):
+    """
+    Perform backward substitution as described in C2
+    """
+    y = np.zeros(r)
+    for i in range(r-1, -1, -1):
+        sum = 0.0
+        for j in range(i+1, r):
+            sum += R[i, j] * y[j]
+        y[i] = (bhat1[i] - sum)/R[i, i]
+    return y
+
+def GMRES_v2(A, b, r):
+    Q, H = arnoldi(A, b, r)
+    R, bhat = givens_qr(H, b, r)
+    y = backward_sub(R, bhat, r)
+    
+    # print(R.shape)
+    # for i in range(R.shape[0]):
+    #     for j in range(R.shape[1]):
+    #         print(f"{R[i, j]:>8.2e}", end="  ")
+    #     print()
+
+    assert np.allclose(y, np.linalg.solve(R[:r,:r], bhat[:r])) # passed
+    return Q @ y
+
+def arnoldi_iteration(A, b, n):
+    m = A.shape[0]
+
+    h = np.zeros((n + 1, n))
+    Q = np.zeros((m, n + 1))
+
+    q = b / np.linalg.norm(b)  # Normalize the input vector
+    Q[:, 0] = q  # Use it as the first Krylov vector
+
+    for k in range(n):
+        v = A.dot(q)  # Generate a new candidate vector
+        for j in range(k + 1):  # Subtract the projections on previous vectors
+            h[j, k] = np.dot(Q[:, j], v)
+            v = v - h[j, k] * Q[:, j]
+
+        h[k + 1, k] = np.linalg.norm(v)
+        eps = 1e-12  # If v is shorter than this threshold it is the zero vector
+        if h[k + 1, k] > eps:  # Add the produced vector to the list, unless
+            q = v / h[k + 1, k]  # the zero vector is produced.
+            Q[:, k + 1] = q
+        else:  # If that happens, stop iterating.
+            return Q, h
+    return Q, h
+
 if __name__ == '__main__':
 
     ### E1
@@ -101,12 +174,18 @@ if __name__ == '__main__':
 
     for r in range(10, 60, 10):
         x = GMRES(A, b, r)
+        x2 = GMRES_v2(A, b, r)
+        xbis = gmres(A, b, maxiter=3)
 
         ax = fig.add_subplot(gs[(r-10)//10, 0])
         ax.plot(np.linspace(0, 1, n), x, "--o", color=next(color_cycle), 
                 label=f'$r = {r}$ $ \ \left ( ||A x - b ||/||b|| = {np.linalg.norm(A @ x - b)/np.linalg.norm(b):.2e} \\right )$')
+        ax.plot(np.linspace(0, 1, n), x2, "--o", color=next(color_cycle), 
+                label=f'$r = {r}$ (Givens) $ \ \left ( ||A x - b ||/||b|| = {np.linalg.norm(A @ x2 - b)/np.linalg.norm(b):.2e} \\right )$')
+        ax.plot(np.linspace(0, 1, n), xbis[0], "--o", color=next(color_cycle),
+                label=f'gmres $ \ \left ( ||A x - b ||/||b|| = {np.linalg.norm(A @ xbis[0] - b)/np.linalg.norm(b):.2e} \\right )$')
         ax.set_ylabel('$U$')
-        ax.set_ylim(-0.0028, 0.0028)
+        # ax.set_ylim(-0.0028, 0.0028)
         if r == 50:
             ax.set_xlabel('$\\xi$')
         ax.legend()
@@ -130,6 +209,11 @@ if __name__ == '__main__':
     b = np.arange(1, n+1)
 
     Q, H = arnoldi(A, b, 50)
+    Qbis, Hbis = arnoldi_iteration(A, b, 49)
+
+    assert np.allclose(Q, Qbis)
+    assert np.allclose(H[:50, :49], Hbis)
+
     beta = H[50, 49]
     H = H[:-1, :]
     eigvals, eigvecs = np.linalg.eig(H)
@@ -144,7 +228,7 @@ if __name__ == '__main__':
     for i in range(5):
         ax = fig.add_subplot(gs[i, 0])
         ax.stem(np.arange(1, n+1), ritz_vecs[:, i], next(color_cycle), basefmt=" ",
-                label=f'$x_{i}$')
+                label=f'$x_{i+1}$')
         ax.legend(loc='upper left', ncol=1)
         ax.grid()
 
@@ -152,7 +236,7 @@ if __name__ == '__main__':
         RHS = np.abs(beta * ys[49, i])
         assert np.isclose(
             LHS, RHS
-        ), f"Bound of D1 failed for x_{i} = Q y_{i}\n {LHS} != {RHS}"
+        ), f"Bound of D1 failed for x_{i+1} = Q y_{i+1}\n {LHS} != {RHS}"
 
     plt.tight_layout()
     plt.savefig('E2.pdf', format='pdf')
